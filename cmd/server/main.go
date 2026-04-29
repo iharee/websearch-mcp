@@ -9,10 +9,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/iharee/websearch-mcp-server/internal/config"
-	"github.com/iharee/websearch-mcp-server/internal/fetcher"
-	"github.com/iharee/websearch-mcp-server/internal/mcp"
-	"github.com/iharee/websearch-mcp-server/internal/searcher"
+	"github.com/iharee/websearch-mcp/internal/config"
+	"github.com/iharee/websearch-mcp/internal/fetcher"
+	"github.com/iharee/websearch-mcp/internal/mcp"
+	"github.com/iharee/websearch-mcp/internal/searcher"
 )
 
 func main() {

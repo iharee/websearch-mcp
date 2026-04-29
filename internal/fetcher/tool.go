@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/iharee/websearch-mcp-server/internal/config"
-	"github.com/iharee/websearch-mcp-server/internal/fetcher/cdp"
-	"github.com/iharee/websearch-mcp-server/internal/fetcher/direct"
-	"github.com/iharee/websearch-mcp-server/internal/mcp"
+	"github.com/iharee/websearch-mcp/internal/config"
+	"github.com/iharee/websearch-mcp/internal/fetcher/cdp"
+	"github.com/iharee/websearch-mcp/internal/fetcher/direct"
+	"github.com/iharee/websearch-mcp/internal/mcp"
 )
 
 func ToolDefinition() mcp.Tool {

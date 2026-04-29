@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iharee/websearch-mcp-server/internal/model"
+	"github.com/iharee/websearch-mcp/internal/model"
 )
 
 const (
-	userAgent           = "websearch-mcp-server/0.1"
+	userAgent           = "websearch-mcp/0.1"
 	requestTimeout      = 20 * time.Second
 	maxRedirects        = 10
 	defaultPreviewChars = 900

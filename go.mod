@@ -1,4 +1,4 @@
-module github.com/iharee/websearch-mcp-server
+module github.com/iharee/websearch-mcp
 
 go 1.22
 

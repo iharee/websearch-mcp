@@ -127,7 +127,7 @@ func (s *Server) handleInitialize(id json.RawMessage, params json.RawMessage, w 
 			Tools: &ToolsCapability{ListChanged: false},
 		},
 		ServerInfo: Implementation{
-			Name:    "websearch-mcp-server",
+			Name:    "websearch-mcp",
 			Version: "0.1.0",
 		},
 	}

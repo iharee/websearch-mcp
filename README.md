@@ -1,31 +1,42 @@
-# websearch-mcp-server
+# websearch-mcp
 
 ![Status](https://img.shields.io/badge/status-alpha-orange)
 ![WIP](https://img.shields.io/badge/🚧-WIP-yellow)
 
-Advanced web search tools and CLI for agents via MCP, supporting multiple search engines and various ways to obtain internet information.
-
----
-
-TODO:
-
-- tavily search
-- cdp fetch
-- CLI
+Advanced web search tools for agents via MCP server and CLI, supporting multiple search engines and various ways to obtain internet information.
 
 ## Features
 
 - **Multi-engine web search** — DuckDuckGo and Tavily, selectable per query
 - **Content fetching** — fetch full page content by URL (direct HTTP or CDP-based)
+- **Dual interface** — MCP server for protocol-based integration, CLI for direct invocation
 
 ## Quick Start
 
+### MCP Server
+
 ```bash
-go build -o websearch-mcp-server ./cmd/server/
-./websearch-mcp-server
+go build -o websearch-mcp ./cmd/server/
+./websearch-mcp
 ```
 
-Server listens on port `8848` (configurable via `PORT` env var).
+Server listens on port `8848` (configurable via `PORT` env var or `--port` flag).
+
+### CLI
+
+```bash
+go build -o websearch-cli ./cmd/cli/
+```
+
+```bash
+# Search
+websearch-cli search <query> [--engine duckduckgo|tavily]
+
+# Fetch
+websearch-cli fetch <url> [--method direct|cdp] [--prompt "..."]
+```
+
+Outputs LLM-friendly text to stdout. Exit code 0 on success, non-zero on failure.
 
 ## Environment Variables
 
@@ -36,7 +47,7 @@ Server listens on port `8848` (configurable via `PORT` env var).
 | `TAVILY_API_KEY` | — | API key for Tavily search |
 | `FETCH_METHOD` | `direct` | Default fetch method (`direct` or `cdp`) |
 
-Priority-wise, explicit specification in the request or command line > environment variable > default value.
+Priority: explicit request parameter > CLI flag > environment variable > default value.
 
 ## MCP Tools
 
@@ -57,7 +68,7 @@ Fetch a URL, convert HTML to readable text, and return content. The `prompt` par
 |-----------|------|----------|-------------|
 | `url` | string | yes | URL of the page to fetch |
 | `prompt` | string | no | What to extract — `"title"` for title, `"summary"` for longer preview, or any description (default: 900-char preview) |
-| `method` | string | no | `direct` or `cdp` (default: `FETCH_METHOD` env or `direct`). Use `cdp` for Chrome DevTools Protocol-based fetching (connects to user's Chrome or launches headless Chromium), `direct` for HTTP-based fetching. |
+| `method` | string | no | `direct` or `cdp` (default: `FETCH_METHOD` env or `direct`). Use `cdp` for Chrome DevTools Protocol-based fetching, `direct` for HTTP-based fetching. |
 
 ## MCP Protocol Examples
 
@@ -93,7 +104,7 @@ Response (`Mcp-Session-Id` also in header):
       "tools": {}
     },
     "serverInfo": {
-      "name": "websearch-mcp-server",
+      "name": "websearch-mcp",
       "version": "0.1.0"
     }
   }
@@ -167,15 +178,3 @@ Response:
   }
 }
 ```
-
-## CLI
-
-For AI agents that prefer direct invocation without MCP protocol overhead:
-
-```bash
-go build -o websearch-cli ./cmd/cli/
-
-# wait for implement
-```
-
-Outputs JSON to stdout. Exit code 0 on success, non-zero on failure.

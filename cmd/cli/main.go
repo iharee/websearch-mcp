@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/iharee/websearch-mcp-server/internal/config"
-	"github.com/iharee/websearch-mcp-server/internal/searcher"
-	"github.com/iharee/websearch-mcp-server/internal/searcher/duckduckgo"
-	"github.com/iharee/websearch-mcp-server/internal/searcher/tavily"
+	"github.com/iharee/websearch-mcp/internal/config"
+	"github.com/iharee/websearch-mcp/internal/searcher"
+	"github.com/iharee/websearch-mcp/internal/searcher/duckduckgo"
+	"github.com/iharee/websearch-mcp/internal/searcher/tavily"
 )
 
 func main() {
