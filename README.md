@@ -10,7 +10,7 @@ Advanced web search tools and CLI for agents via MCP, supporting multiple search
 TODO:
 
 - tavily search
-- headless fetch
+- cdp fetch
 - CLI
 
 ## Features
@@ -34,7 +34,7 @@ Server listens on port `8848` (configurable via `PORT` env var).
 | `PORT` | `8848` | Server listen port |
 | `SEARCH_ENGINE` | `duckduckgo` | Default search engine (`duckduckgo` or `tavily`) |
 | `TAVILY_API_KEY` | — | API key for Tavily search |
-| `FETCH_METHOD` | `direct` | Default fetch method (`direct`, `cdp`, or `headless`) |
+| `FETCH_METHOD` | `direct` | Default fetch method (`direct` or `cdp`) |
 
 Priority-wise, explicit specification in the request or command line > environment variable > default value.
 
@@ -57,7 +57,7 @@ Fetch a URL, convert HTML to readable text, and return content. The `prompt` par
 |-----------|------|----------|-------------|
 | `url` | string | yes | URL of the page to fetch |
 | `prompt` | string | no | What to extract — `"title"` for title, `"summary"` for longer preview, or any description (default: 900-char preview) |
-| `method` | string | no | `direct`, `cdp`, or `headless` (default: `FETCH_METHOD` env or `direct`). Use `cdp` for Chrome DevTools Protocol-based fetching, `direct` for HTTP-based fetching. |
+| `method` | string | no | `direct` or `cdp` (default: `FETCH_METHOD` env or `direct`). Use `cdp` for Chrome DevTools Protocol-based fetching (connects to user's Chrome or launches headless Chromium), `direct` for HTTP-based fetching. |
 
 ## MCP Protocol Examples
 

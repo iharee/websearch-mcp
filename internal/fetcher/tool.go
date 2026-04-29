@@ -8,14 +8,13 @@ import (
 	"github.com/iharee/websearch-mcp-server/internal/config"
 	"github.com/iharee/websearch-mcp-server/internal/fetcher/cdp"
 	"github.com/iharee/websearch-mcp-server/internal/fetcher/direct"
-	"github.com/iharee/websearch-mcp-server/internal/fetcher/headless"
 	"github.com/iharee/websearch-mcp-server/internal/mcp"
 )
 
 func ToolDefinition() mcp.Tool {
 	return mcp.Tool{
 		Name:        "fetch_content",
-		Description: "Fetch a URL, convert HTML to readable text, and return content based on the prompt intent. Use 'method' parameter to select direct, cdp, or headless.",
+		Description: "Fetch a URL, convert HTML to readable text, and return content based on the prompt intent. Use 'method' parameter to select direct or cdp.",
 		InputSchema: mcp.JSONSchema{
 			Type: "object",
 			Properties: map[string]mcp.JSONSchema{
@@ -29,7 +28,7 @@ func ToolDefinition() mcp.Tool {
 				},
 				"method": {
 					Type:        "string",
-					Description: "Fetch method: direct, cdp, or headless (case-insensitive). Defaults to FETCH_METHOD env var or direct.",
+					Description: "Fetch method: direct or cdp (case-insensitive). Defaults to FETCH_METHOD env var or direct.",
 				},
 			},
 			Required: []string{"url"},
@@ -84,8 +83,6 @@ func resolveProvider(args map[string]interface{}) Provider {
 	switch method {
 	case "cdp":
 		return cdp.NewProvider()
-	case "headless":
-		return headless.NewProvider()
 	default:
 		return direct.NewProvider()
 	}
