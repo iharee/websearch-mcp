@@ -3,7 +3,7 @@
 ![Status](https://img.shields.io/badge/status-alpha-orange)
 ![WIP](https://img.shields.io/badge/🚧-WIP-yellow)
 
-Advanced web search tools for agents via MCP server and LLM-friendly CLI, supporting multiple search engines and various ways to obtain internet information.
+Advanced web search tools designed for agents. Available as both MCP server and LLM-friendly CLI, supporting multiple search engines and various ways to gather internet information.
 
 ## Features
 
