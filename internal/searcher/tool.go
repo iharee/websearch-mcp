@@ -2,14 +2,13 @@ package searcher
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/iharee/websearch-mcp-server/internal/searcher/duckduckgo"
-	"github.com/iharee/websearch-mcp-server/internal/searcher/tavily"
 	"strings"
 
 	"github.com/iharee/websearch-mcp-server/internal/config"
 	"github.com/iharee/websearch-mcp-server/internal/mcp"
+	"github.com/iharee/websearch-mcp-server/internal/searcher/duckduckgo"
+	"github.com/iharee/websearch-mcp-server/internal/searcher/tavily"
 )
 
 func ToolDefinition() mcp.Tool {
@@ -50,13 +49,20 @@ func Handler() mcp.ToolHandler {
 			return nil, fmt.Errorf("search failed: %w", err)
 		}
 
-		data, err := json.Marshal(results)
-		if err != nil {
-			return nil, fmt.Errorf("marshal results: %w", err)
+		if len(results) == 0 {
+			return &mcp.ToolCallResult{
+				Content: []mcp.ContentItem{{Type: "text", Text: fmt.Sprintf("No web search results matched the query %q.", query)}},
+			}, nil
+		}
+
+		var buf strings.Builder
+		fmt.Fprintf(&buf, "Search results for %q. Include a Sources section in the final answer.\n", query)
+		for _, r := range results {
+			fmt.Fprintf(&buf, "- [%s](%s)\n", r.Title, r.URL)
 		}
 
 		return &mcp.ToolCallResult{
-			Content: []mcp.ContentItem{{Type: "text", Text: string(data)}},
+			Content: []mcp.ContentItem{{Type: "text", Text: buf.String()}},
 		}, nil
 	}
 }

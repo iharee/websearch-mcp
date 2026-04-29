@@ -114,7 +114,7 @@ Response:
     "content": [
       {
         "type": "text",
-        "text": "[{\"url\":\"\",\"title\":\"Tenma Saki\",\"snippet\":\"\"},{\"url\":\"\",\"title\":\"SEGA copyright\",\"snippet\":\"\"}]"
+        "text": "Search results for \"tenmasaki\". Include a Sources section in the final answer.\n- [Tenma Saki](https://example_1.com/)\n- [SEGA copyright](https://example_2.com/)"
       }
     ]
   }
@@ -147,7 +147,7 @@ Response:
     "content": [
       {
         "type": "text",
-        "text": "{\"url\":\"https://example.com\",\"title\":\"Example Domain\",\"content\":\"...\"}"
+        "text": "Title: Example Domain\nURL: https://example.com\n\nThis domain is for use in illustrative examples in documents..."
       }
     ]
   }

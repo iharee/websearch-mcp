@@ -2,8 +2,8 @@ package fetcher
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/iharee/websearch-mcp-server/internal/mcp"
 )
@@ -40,13 +40,15 @@ func Handler(f Fetcher) mcp.ToolHandler {
 			return nil, fmt.Errorf("fetch failed: %w", err)
 		}
 
-		data, err := json.Marshal(content)
-		if err != nil {
-			return nil, fmt.Errorf("marshal content: %w", err)
+		var buf strings.Builder
+		fmt.Fprintf(&buf, "Title: %s\n", content.Title)
+		fmt.Fprintf(&buf, "URL: %s\n", content.URL)
+		if content.Content != "" {
+			fmt.Fprintf(&buf, "\n%s", content.Content)
 		}
 
 		return &mcp.ToolCallResult{
-			Content: []mcp.ContentItem{{Type: "text", Text: string(data)}},
+			Content: []mcp.ContentItem{{Type: "text", Text: buf.String()}},
 		}, nil
 	}
 }
