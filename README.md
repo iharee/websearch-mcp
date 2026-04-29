@@ -3,7 +3,7 @@
 ![Status](https://img.shields.io/badge/status-alpha-orange)
 ![WIP](https://img.shields.io/badge/🚧-WIP-yellow)
 
-Advanced web search tools for agents via MCP server and CLI, supporting multiple search engines and various ways to obtain internet information.
+Advanced web search tools for agents via MCP server and LLM-friendly CLI, supporting multiple search engines and various ways to obtain internet information.
 
 ## Features
 
@@ -33,7 +33,7 @@ go build -o websearch-cli ./cmd/cli/
 websearch-cli search <query> [--engine duckduckgo|tavily]
 
 # Fetch
-websearch-cli fetch <url> [--method direct|cdp] [--prompt "..."]
+websearch-cli fetch <url> [--method direct|cdp]
 ```
 
 Outputs LLM-friendly text to stdout. Exit code 0 on success, non-zero on failure.

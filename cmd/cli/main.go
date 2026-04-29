@@ -2,78 +2,168 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
+	"time"
+
+	"github.com/spf13/cobra"
 
 	"github.com/iharee/websearch-mcp/internal/config"
+	"github.com/iharee/websearch-mcp/internal/fetcher"
+	"github.com/iharee/websearch-mcp/internal/fetcher/cdp"
+	"github.com/iharee/websearch-mcp/internal/fetcher/direct"
 	"github.com/iharee/websearch-mcp/internal/searcher"
 	"github.com/iharee/websearch-mcp/internal/searcher/duckduckgo"
 	"github.com/iharee/websearch-mcp/internal/searcher/tavily"
 )
 
+const defaultTimeout = 30 * time.Second
+
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: websearch-cli <command> [args]")
-		fmt.Fprintln(os.Stderr, "  search  --query <q> [--engine duckduckgo|tavily]")
-		fmt.Fprintln(os.Stderr, "  fetch   --url <url>")
-		os.Exit(1)
-	}
-
-	switch os.Args[1] {
-	case "search":
-		runSearch(os.Args[2:])
-	case "fetch":
-		fmt.Fprintln(os.Stderr, "fetch: not yet implemented")
-		os.Exit(1)
-	default:
-		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
+	rootCmd.AddCommand(searchCmd, fetchCmd)
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
-func runSearch(args []string) {
-	query := flagArg(args, "query")
-	engine := flagArg(args, "engine")
-	if query == "" {
-		fmt.Fprintln(os.Stderr, "search: --query is required")
-		os.Exit(1)
-	}
-	if engine == "" {
-		engine = config.SearchEngine()
-	}
+var rootCmd = &cobra.Command{
+	Use:   "websearch-cli",
+	Short: "Advanced web search tools for agents via CLI",
+	Long: `A CLI for web search and content fetching, designed for direct invocation
+by AI agents without MCP protocol overhead.
 
-	var p searcher.Provider
-	switch engine {
-	case "tavily":
-		p = tavily.NewProvider()
-	default:
-		p = duckduckgo.NewProvider()
-	}
+Environment Variables:
+  SEARCH_ENGINE    Search engine (default duckduckgo): duckduckgo or tavily
+  FETCH_METHOD     Fetch method (default direct): direct or cdp
+  TAVILY_API_KEY   API key for Tavily search
 
-	results, err := p.Search(context.Background(), query)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "search failed: %v\n", err)
-		os.Exit(1)
-	}
-
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	enc.Encode(results)
+Priority: explicit flag > environment variable > built-in default.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		_ = cmd.Help()
+	},
 }
 
-func flagArg(args []string, name string) string {
-	prefix := "--" + name + "="
-	for _, a := range args {
-		if len(a) >= len(prefix) && a[:len(prefix)] == prefix {
-			return a[len(prefix):]
+var searchCmd = &cobra.Command{
+	Use:   "search <query>",
+	Short: "Search the web via DuckDuckGo or Tavily",
+	Long: `Search the web using the specified engine and return results as
+LLM-friendly markdown.
+
+Arguments:
+  <query>    Search query string (required).
+
+Output is a markdown list with [title](url) links. If no results
+match, prints a message to stdout.
+
+Failure Cases:
+  The SEARCH_ENGINE env var or --engine flag holds an unknown engine
+  value: falls back to duckduckgo.
+  Network error or timeout: prints the error to stderr and exits with
+  code 1.`,
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := newContext(cmd)
+		defer cancel()
+
+		query := args[0]
+		engine, _ := cmd.Flags().GetString("engine")
+		if engine == "" {
+			engine = config.SearchEngine()
 		}
-	}
-	prefix = "--" + name
-	for i, a := range args {
-		if a == prefix && i+1 < len(args) {
-			return args[i+1]
+
+		var p searcher.Provider
+		switch engine {
+		case "tavily":
+			p = tavily.NewProvider()
+		default:
+			p = duckduckgo.NewProvider()
 		}
+
+		results, err := p.Search(ctx, query)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "search failed: %v\n", err)
+			os.Exit(1)
+		}
+
+		if len(results) == 0 {
+			fmt.Printf("No web search results matched the query %q.\n", query)
+			return
+		}
+
+		fmt.Printf("Search results for %q. Include a Sources section in the final answer.\n", query)
+		for _, r := range results {
+			fmt.Printf("- [%s](%s)\n", r.Title, r.URL)
+		}
+	},
+}
+
+var fetchCmd = &cobra.Command{
+	Use:   "fetch <url>",
+	Short: "Fetch and extract page content by URL",
+	Long: `Fetch a URL, convert HTML to readable text, and return content as
+LLM-friendly text.
+
+Arguments:
+  <url>    Page URL to fetch (required).
+
+Output is the page title, URL, and plain-text content.
+
+Failure Cases:
+  The FETCH_METHOD env var or --method flag holds an unknown value:
+  falls back to direct.
+  Network error or timeout: prints the error to stderr and exits with
+  code 1.
+  The URL is missing a scheme (e.g. example.com): https:// is
+  prepended automatically.`,
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := newContext(cmd)
+		defer cancel()
+
+		url := args[0]
+		method, _ := cmd.Flags().GetString("method")
+		if method == "" {
+			method = config.FetchMethod()
+		}
+
+		var p fetcher.Provider
+		switch method {
+		case "cdp":
+			p = cdp.NewProvider()
+		default:
+			p = direct.NewProvider()
+		}
+
+		result, err := p.Fetch(ctx, url, "")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "fetch failed: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Title: %s\n", result.Title)
+		fmt.Printf("URL: %s\n", result.URL)
+		if result.Content != "" {
+			fmt.Printf("\n%s", result.Content)
+		}
+	},
+}
+
+func newContext(cmd *cobra.Command) (context.Context, context.CancelFunc) {
+	timeout, _ := cmd.Flags().GetDuration("timeout")
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	sigCtx, sigCancel := signal.NotifyContext(ctx, os.Interrupt)
+	return sigCtx, func() {
+		sigCancel()
+		cancel()
 	}
-	return ""
+}
+
+func init() {
+	rootCmd.PersistentFlags().DurationP("timeout", "t", defaultTimeout,
+		fmt.Sprintf("Request timeout (default %s)", defaultTimeout),
+	)
+
+	searchCmd.Flags().StringP("engine", "e", "", "Search engine (duckduckgo or tavily). Defaults to SEARCH_ENGINE env var, or duckduckgo.")
+	fetchCmd.Flags().StringP("method", "m", "", "Fetch method: direct (plain HTTP, strips HTML) or cdp (Chrome DevTools, renders JS). Defaults to FETCH_METHOD env var, or direct.")
 }
