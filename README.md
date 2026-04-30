@@ -160,6 +160,7 @@ Request:
     "name": "fetch_content",
     "arguments": {
       "url": "https://example.com",
+      "mode": "summary",
       "method": "direct"
     }
   }
