@@ -121,4 +121,14 @@ func TestCachedFetcherModeTruncation(t *testing.T) {
 			t.Errorf("short content unchanged: got %q, want %q", r.Content, "hello")
 		}
 	})
+
+	t.Run("invalid_mode", func(t *testing.T) {
+		r, err := c.Fetch(context.Background(), "https://x.com", "nonsense", true)
+		if err == nil {
+			t.Error("expected error for invalid mode, got nil")
+		}
+		if r != nil {
+			t.Errorf("expected nil result for invalid mode, got %v", r)
+		}
+	})
 }

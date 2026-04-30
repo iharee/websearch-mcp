@@ -5,6 +5,10 @@
 
 Advanced web search tools designed for agents. Available as both MCP server and LLM-friendly CLI, supporting multiple search engines and various ways to gather internet information.
 
+---
+
+TODO: Tavily search
+
 ## Features
 
 - **Multi-engine web search** — DuckDuckGo and Tavily, selectable per query
@@ -90,7 +94,7 @@ Request:
   "id": 1,
   "method": "initialize",
   "params": {
-    "protocolVersion": "2026-04-29",
+    "protocolVersion": "2025-06-18",
     "capabilities": {},
     "clientInfo": {
       "name": "test",
@@ -106,7 +110,7 @@ Response (`Mcp-Session-Id` also in header):
   "jsonrpc": "2.0",
   "id": 1,
   "result": {
-    "protocolVersion": "2026-04-29",
+    "protocolVersion": "2025-06-18",
     "capabilities": {
       "tools": {}
     },

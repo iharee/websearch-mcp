@@ -3,6 +3,7 @@ package direct
 import (
 	"context"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/iharee/websearch-mcp/internal/model"
+	"github.com/iharee/websearch-mcp/internal/util"
 )
 
 const (
@@ -70,7 +72,7 @@ func (p *Provider) Fetch(ctx context.Context, rawURL string) (*model.FetchResult
 }
 
 func fullText(body, contentType string) string {
-	return collapseWhitespace(normalizeContent(body, contentType))
+	return util.CollapseWhitespace(normalizeContent(body, contentType))
 }
 
 func normalizeURL(rawURL string) (string, error) {
@@ -92,7 +94,7 @@ func normalizeURL(rawURL string) (string, error) {
 
 func normalizeContent(body, contentType string) string {
 	if strings.Contains(contentType, "html") {
-		return htmlToText(body)
+		return util.HTMLToText(body)
 	}
 	return strings.TrimSpace(body)
 }
@@ -109,7 +111,7 @@ func extractTitle(body, contentType string) string {
 			end := strings.Index(lower, "</title>")
 			if end != -1 && end > start {
 				title := body[start:end]
-				return collapseWhitespace(decodeEntities(strings.TrimSpace(title)))
+				return util.CollapseWhitespace(html.UnescapeString(strings.TrimSpace(title)))
 			}
 		}
 	}
@@ -120,36 +122,3 @@ func extractTitle(body, contentType string) string {
 	return strings.TrimSpace(text)
 }
 
-func htmlToText(html string) string {
-	var buf strings.Builder
-	buf.Grow(len(html))
-	inTag := false
-
-	for _, ch := range html {
-		switch {
-		case ch == '<':
-			inTag = true
-		case ch == '>':
-			inTag = false
-		case inTag:
-		default:
-			buf.WriteRune(ch)
-		}
-	}
-
-	return decodeEntities(buf.String())
-}
-
-func decodeEntities(s string) string {
-	s = strings.ReplaceAll(s, "&amp;", "&")
-	s = strings.ReplaceAll(s, "&lt;", "<")
-	s = strings.ReplaceAll(s, "&gt;", ">")
-	s = strings.ReplaceAll(s, "&quot;", "\"")
-	s = strings.ReplaceAll(s, "&#39;", "'")
-	s = strings.ReplaceAll(s, "&nbsp;", " ")
-	return s
-}
-
-func collapseWhitespace(s string) string {
-	return strings.Join(strings.Fields(s), " ")
-}

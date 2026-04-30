@@ -63,7 +63,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.Header.Get("Mcp-Session-Id")
 
 	// initialize is the only method allowed without a session
-	if req.Method != "initialize" && sessionID != "" {
+	if req.Method != "initialize" {
 		s.mu.RLock()
 		valid := s.sessions[sessionID]
 		s.mu.RUnlock()

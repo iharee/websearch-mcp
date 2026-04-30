@@ -35,31 +35,6 @@ func TestFetch(t *testing.T) {
 	t.Logf("Content length: %d chars", len([]rune(result.Content)))
 }
 
-func TestHTMLToText(t *testing.T) {
-	tests := []struct {
-		name string
-		in   string
-		want string
-	}{
-		{"plain_text", "hello world", "hello world"},
-		{"simple_tag", "<p>hello</p>", "hello"},
-		{"nested_tags", "<div><span>text</span></div>", "text"},
-		{"entities", "a&amp;b &lt; c &gt; d &quot;e&quot; &#39;f&#39;", `a&b < c > d "e" 'f'`},
-		{"nbsp", "hello&nbsp;world", "hello world"},
-		{"whitespace_collapse", "hello   \n\t  world", "hello world"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := htmlToText(tt.in)
-			got = collapseWhitespace(got)
-			if got != tt.want {
-				t.Errorf("htmlToText(%q) = %q, want %q", tt.in, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestExtractTitle(t *testing.T) {
 	t.Run("from_title_tag", func(t *testing.T) {
 		html := "<html><head><title>My Page</title></head><body></body></html>"

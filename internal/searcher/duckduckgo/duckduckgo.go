@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/iharee/websearch-mcp/internal/model"
+	"github.com/iharee/websearch-mcp/internal/util"
 )
 
 const (
@@ -118,7 +119,7 @@ func extractSearchHits(htmlStr string) []model.SearchResult {
 			continue
 		}
 
-		title := htmlToText(afterTag[:endAnchorIdx])
+		title := util.HTMLToText(afterTag[:endAnchorIdx])
 		if decodedURL := decodeDDGRedirect(hrefURL); decodedURL != "" && title != "" {
 			hits = append(hits, model.SearchResult{
 				URL:   decodedURL,
@@ -166,7 +167,7 @@ func extractGenericLinks(htmlStr string) []model.SearchResult {
 			continue
 		}
 
-		title := strings.TrimSpace(htmlToText(afterTag[:endAnchorIdx]))
+		title := strings.TrimSpace(util.HTMLToText(afterTag[:endAnchorIdx]))
 		if title == "" {
 			remaining = afterTag[endAnchorIdx+4:]
 			continue
@@ -230,27 +231,6 @@ func decodeDDGRedirect(rawURL string) string {
 		}
 	}
 	return html.UnescapeString(joined)
-}
-
-func htmlToText(s string) string {
-	var buf strings.Builder
-	buf.Grow(len(s))
-	inTag := false
-
-	for _, ch := range s {
-		switch {
-		case ch == '<':
-			inTag = true
-		case ch == '>':
-			inTag = false
-		case inTag:
-		default:
-			buf.WriteRune(ch)
-		}
-	}
-
-	parts := strings.Fields(html.UnescapeString(buf.String()))
-	return strings.Join(parts, " ")
 }
 
 func dedupeHits(hits *[]model.SearchResult) {

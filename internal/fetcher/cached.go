@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/iharee/websearch-mcp/internal/cache"
@@ -38,10 +39,14 @@ func NewCachedFetcher(inner Provider) *CachedFetcher {
 func (c *CachedFetcher) Fetch(ctx context.Context, url string, mode string, noCache bool) (*model.FetchResult, error) {
 	if !noCache {
 		if cached, ok := c.cache.Get(url); ok {
+			content, err := truncateByMode(cached.Content, mode)
+			if err != nil {
+				return nil, err
+			}
 			return &model.FetchResult{
 				URL:     cached.URL,
 				Title:   cached.Title,
-				Content: truncateByMode(cached.Content, mode),
+				Content: content,
 			}, nil
 		}
 	}
@@ -55,24 +60,30 @@ func (c *CachedFetcher) Fetch(ctx context.Context, url string, mode string, noCa
 		c.cache.Put(url, full)
 	}
 
+	content, err := truncateByMode(full.Content, mode)
+	if err != nil {
+		return nil, err
+	}
 	return &model.FetchResult{
 		URL:     full.URL,
 		Title:   full.Title,
-		Content: truncateByMode(full.Content, mode),
+		Content: content,
 	}, nil
 }
 
-func truncateByMode(fullText, mode string) string {
+func truncateByMode(fullText, mode string) (string, error) {
 	lower := strings.ToLower(mode)
 	switch {
-	case strings.Contains(lower, "full"):
-		return fullText
-	case strings.Contains(lower, "title"):
-		return previewText(fullText, titlePreviewChars)
-	case strings.Contains(lower, "summary") || strings.Contains(lower, "summarize"):
-		return previewText(fullText, summaryPreviewChars)
+	case lower == "":
+		return previewText(fullText, defaultPreviewChars), nil
+	case lower == "full":
+		return fullText, nil
+	case lower == "title":
+		return previewText(fullText, titlePreviewChars), nil
+	case lower == "summary" || lower == "summarize":
+		return previewText(fullText, summaryPreviewChars), nil
 	default:
-		return previewText(fullText, defaultPreviewChars)
+		return "", fmt.Errorf("invalid mode: %q; valid modes are full, summary, title", mode)
 	}
 }
 
