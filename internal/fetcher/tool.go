@@ -4,12 +4,26 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/iharee/websearch-mcp/internal/config"
 	"github.com/iharee/websearch-mcp/internal/fetcher/cdp"
 	"github.com/iharee/websearch-mcp/internal/fetcher/direct"
 	"github.com/iharee/websearch-mcp/internal/mcp"
 )
+
+var (
+	directFetcher *CachedFetcher
+	cdpFetcher    *CachedFetcher
+	fetcherOnce   sync.Once
+)
+
+func initFetchers() {
+	fetcherOnce.Do(func() {
+		directFetcher = NewCachedFetcher(direct.NewProvider())
+		cdpFetcher = NewCachedFetcher(cdp.NewProvider())
+	})
+}
 
 func ToolDefinition() mcp.Tool {
 	return mcp.Tool{
@@ -29,6 +43,10 @@ func ToolDefinition() mcp.Tool {
 				"method": {
 					Type:        "string",
 					Description: "Fetch method: direct or cdp (case-insensitive). Defaults to FETCH_METHOD env var or direct.",
+				},
+				"no_cache": {
+					Type:        "boolean",
+					Description: "If true, bypass the cache and force a fresh fetch. Defaults to false.",
 				},
 			},
 			Required: []string{"url"},
@@ -51,9 +69,15 @@ func Handler() mcp.ToolHandler {
 			mode = strings.TrimSpace(m)
 		}
 
-		provider := resolveProvider(args)
+		noCache := false
+		if nc, ok := args["no_cache"].(bool); ok {
+			noCache = nc
+		}
 
-		content, err := provider.Fetch(ctx, url, mode)
+		initFetchers()
+		fetcher := resolveFetcher(args)
+
+		content, err := fetcher.Fetch(ctx, url, mode, noCache)
 		if err != nil {
 			return nil, fmt.Errorf("fetch failed: %w", err)
 		}
@@ -71,7 +95,7 @@ func Handler() mcp.ToolHandler {
 	}
 }
 
-func resolveProvider(args map[string]interface{}) Provider {
+func resolveFetcher(args map[string]interface{}) *CachedFetcher {
 	method := ""
 	if m, ok := args["method"].(string); ok {
 		method = strings.ToLower(strings.TrimSpace(m))
@@ -82,8 +106,8 @@ func resolveProvider(args map[string]interface{}) Provider {
 
 	switch method {
 	case "cdp":
-		return cdp.NewProvider()
+		return cdpFetcher
 	default:
-		return direct.NewProvider()
+		return directFetcher
 	}
 }

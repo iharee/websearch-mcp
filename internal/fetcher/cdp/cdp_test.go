@@ -37,7 +37,7 @@ func TestFetchNoChrome(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err := p.Fetch(ctx, "https://example.com", "")
+	_, err := p.Fetch(ctx, "https://example.com")
 	if err == nil {
 		t.Fatal("expected error when Chrome is not running")
 	}
@@ -55,7 +55,7 @@ func TestFetchIntegration(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	result, err := p.Fetch(ctx, testURL, "")
+	result, err := p.Fetch(ctx, testURL)
 	if err != nil {
 		t.Fatalf("Fetch failed: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestFetchRedirect(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	result, err := p.Fetch(ctx, "http://example.com", "")
+	result, err := p.Fetch(ctx, "http://example.com")
 	if err != nil {
 		t.Fatalf("Fetch failed: %v", err)
 	}
@@ -100,49 +100,6 @@ func TestFetchRedirect(t *testing.T) {
 	t.Logf("Final URL: %s", result.URL)
 }
 
-func TestSelectContent(t *testing.T) {
-	longText := strings.Repeat("hello world ", 500)
-
-	t.Run("full", func(t *testing.T) {
-		got := selectContent(longText, "get full content")
-		if got != longText {
-			t.Errorf("full should return complete text, got %d chars, want %d", len(got), len(longText))
-		}
-	})
-
-	t.Run("title", func(t *testing.T) {
-		got := selectContent(longText, "get title")
-		if len([]rune(got)) > titlePreviewChars+3 {
-			t.Errorf("title mode too long: %d runes", len([]rune(got)))
-		}
-	})
-
-	t.Run("summary", func(t *testing.T) {
-		got := selectContent(longText, "summarize this")
-		if len([]rune(got)) > summaryPreviewChars+3 {
-			t.Errorf("summary mode too long: %d runes", len([]rune(got)))
-		}
-	})
-
-	t.Run("default", func(t *testing.T) {
-		got := selectContent(longText, "")
-		if len([]rune(got)) > defaultPreviewChars+3 {
-			t.Errorf("default mode too long: %d runes", len([]rune(got)))
-		}
-	})
-
-	t.Run("short_text_no_truncation", func(t *testing.T) {
-		short := "hello world"
-		got := selectContent(short, "")
-		if got != short {
-			t.Errorf("short text should not be truncated: %q", got)
-		}
-		if strings.HasSuffix(got, "...") {
-			t.Error("short text should not end with ...")
-		}
-	})
-}
-
 func TestFetchContextCancellation(t *testing.T) {
 	if os.Getenv("CHROME_DEBUG_ADDR") == "" {
 		t.Skip("CHROME_DEBUG_ADDR not set, skipping integration test")
@@ -152,7 +109,7 @@ func TestFetchContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := p.Fetch(ctx, "https://example.com", "")
+	_, err := p.Fetch(ctx, "https://example.com")
 	if err == nil {
 		t.Fatal("expected error from cancelled context")
 	}

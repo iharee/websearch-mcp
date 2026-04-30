@@ -13,12 +13,9 @@ import (
 )
 
 const (
-	userAgent           = "websearch-mcp/0.1"
-	requestTimeout      = 20 * time.Second
-	maxRedirects        = 10
-	defaultPreviewChars = 900
-	summaryPreviewChars = 1200
-	titlePreviewChars   = 600
+	userAgent      = "websearch-mcp/0.1"
+	requestTimeout = 20 * time.Second
+	maxRedirects   = 10
 )
 
 type Provider struct {
@@ -39,7 +36,7 @@ func NewProvider() *Provider {
 	}
 }
 
-func (p *Provider) Fetch(ctx context.Context, rawURL string, mode string) (*model.FetchResult, error) {
+func (p *Provider) Fetch(ctx context.Context, rawURL string) (*model.FetchResult, error) {
 	requestURL, err := normalizeURL(rawURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse URL: %w", err)
@@ -65,14 +62,15 @@ func (p *Provider) Fetch(ctx context.Context, rawURL string, mode string) (*mode
 	bodyStr := string(body)
 	contentType := resp.Header.Get("Content-Type")
 
-	text := selectContent(bodyStr, mode, contentType)
-	title := extractTitle(bodyStr, contentType)
-
 	return &model.FetchResult{
 		URL:     resp.Request.URL.String(),
-		Title:   title,
-		Content: text,
+		Title:   extractTitle(bodyStr, contentType),
+		Content: fullText(bodyStr, contentType),
 	}, nil
+}
+
+func fullText(body, contentType string) string {
+	return collapseWhitespace(normalizeContent(body, contentType))
 }
 
 func normalizeURL(rawURL string) (string, error) {
@@ -90,23 +88,6 @@ func normalizeURL(rawURL string) (string, error) {
 		}
 	}
 	return parsed.String(), nil
-}
-
-func selectContent(body, mode, contentType string) string {
-	normalized := normalizeContent(body, contentType)
-	compact := collapseWhitespace(normalized)
-	lowerMode := strings.ToLower(mode)
-
-	if strings.Contains(lowerMode, "full") {
-		return compact
-	}
-	if strings.Contains(lowerMode, "title") {
-		return previewText(compact, titlePreviewChars)
-	}
-	if strings.Contains(lowerMode, "summary") || strings.Contains(lowerMode, "summarize") {
-		return previewText(compact, summaryPreviewChars)
-	}
-	return previewText(compact, defaultPreviewChars)
 }
 
 func normalizeContent(body, contentType string) string {
@@ -171,12 +152,4 @@ func decodeEntities(s string) string {
 
 func collapseWhitespace(s string) string {
 	return strings.Join(strings.Fields(s), " ")
-}
-
-func previewText(s string, maxChars int) string {
-	runes := []rune(s)
-	if len(runes) <= maxChars {
-		return s
-	}
-	return strings.TrimSpace(string(runes[:maxChars])) + "..."
 }

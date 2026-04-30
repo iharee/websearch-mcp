@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -17,6 +18,25 @@ import (
 	"github.com/iharee/websearch-mcp/internal/searcher/duckduckgo"
 	"github.com/iharee/websearch-mcp/internal/searcher/tavily"
 )
+
+var (
+	directFetcher *fetcher.CachedFetcher
+	cdpFetcher    *fetcher.CachedFetcher
+	fetcherOnce   sync.Once
+)
+
+func getFetcher(method string) *fetcher.CachedFetcher {
+	fetcherOnce.Do(func() {
+		directFetcher = fetcher.NewCachedFetcher(direct.NewProvider())
+		cdpFetcher = fetcher.NewCachedFetcher(cdp.NewProvider())
+	})
+	switch method {
+	case "cdp":
+		return cdpFetcher
+	default:
+		return directFetcher
+	}
+}
 
 const defaultTimeout = 30 * time.Second
 
@@ -115,6 +135,7 @@ Options:
                     summary — longer preview (~1200 chars)
                     title   — short preview (~600 chars)
                   Defaults to a 900-char preview if unset.
+  --no-cache      Bypass the fetch cache and force a fresh request.
 
 Output is the page title, URL, and plain-text content.
 
@@ -136,17 +157,11 @@ Failure Cases:
 			method = config.FetchMethod()
 		}
 
-		var p fetcher.Provider
-		switch method {
-		case "cdp":
-			p = cdp.NewProvider()
-		default:
-			p = direct.NewProvider()
-		}
-
 		mode, _ := cmd.Flags().GetString("mode")
+		noCache, _ := cmd.Flags().GetBool("no-cache")
 
-		result, err := p.Fetch(ctx, url, mode)
+		f := getFetcher(method)
+		result, err := f.Fetch(ctx, url, mode, noCache)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "fetch failed: %v\n", err)
 			os.Exit(1)
@@ -178,4 +193,5 @@ func init() {
 	searchCmd.Flags().StringP("engine", "e", "", "Search engine (duckduckgo or tavily). Defaults to SEARCH_ENGINE env var, or duckduckgo.")
 	fetchCmd.Flags().StringP("method", "m", "", "Fetch method: direct (plain HTTP, strips HTML) or cdp (Chrome DevTools, renders JS). Defaults to FETCH_METHOD env var, or direct.")
 	fetchCmd.Flags().StringP("mode", "o", "", "Content length mode: full (complete), summary (longer preview), title (short preview). Defaults to a 900-char preview if unset.")
+	fetchCmd.Flags().Bool("no-cache", false, "Bypass the fetch cache and force a fresh request.")
 }

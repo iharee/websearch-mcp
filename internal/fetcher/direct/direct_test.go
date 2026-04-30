@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 	"testing"
-	"time"
 )
 
 const testURL = "https://iharee.github.io/2026/03/22/mathematical_principles_of_transformer/"
@@ -12,7 +11,7 @@ const testURL = "https://iharee.github.io/2026/03/22/mathematical_principles_of_
 func TestFetch(t *testing.T) {
 	p := NewProvider()
 
-	result, err := p.Fetch(context.Background(), testURL, "")
+	result, err := p.Fetch(context.Background(), testURL)
 	if err != nil {
 		t.Fatalf("Fetch failed: %v", err)
 	}
@@ -31,51 +30,8 @@ func TestFetch(t *testing.T) {
 		t.Error("Content appears to contain un-stripped HTML tags")
 	}
 
-	if len([]rune(result.Content)) > defaultPreviewChars+5 {
-		t.Errorf("Content too long: %d chars (max %d)", len([]rune(result.Content)), defaultPreviewChars)
-	}
-
 	t.Logf("URL: %s", result.URL)
 	t.Logf("Title: %s", result.Title)
-	t.Logf("Content length: %d chars", len([]rune(result.Content)))
-}
-
-func TestFetchWithTitlePrompt(t *testing.T) {
-	time.Sleep(15 * time.Second) // avoid GitHub Pages rate-limiting
-	p := NewProvider()
-
-	result, err := p.Fetch(context.Background(), testURL, "title")
-	if err != nil {
-		t.Fatalf("Fetch failed: %v", err)
-	}
-
-	if result.Title == "" {
-		t.Error("Title is empty")
-	}
-	if len([]rune(result.Content)) > titlePreviewChars+5 {
-		t.Errorf("Title mode should return short content, got %d chars", len([]rune(result.Content)))
-	}
-
-	t.Logf("Title: %s", result.Title)
-	t.Logf("Content: %s", result.Content)
-}
-
-func TestFetchWithSummaryPrompt(t *testing.T) {
-	time.Sleep(15 * time.Second) // avoid GitHub Pages rate-limiting
-	p := NewProvider()
-
-	result, err := p.Fetch(context.Background(), testURL, "summary")
-	if err != nil {
-		t.Fatalf("Fetch failed: %v", err)
-	}
-
-	if result.Content == "" {
-		t.Error("Content is empty")
-	}
-	if len([]rune(result.Content)) > summaryPreviewChars+5 {
-		t.Errorf("Summary mode content too long: %d chars", len([]rune(result.Content)))
-	}
-
 	t.Logf("Content length: %d chars", len([]rune(result.Content)))
 }
 
@@ -102,44 +58,6 @@ func TestHTMLToText(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestSelectContent(t *testing.T) {
-	html := "<html><head><title>Test Page</title></head><body><p>Some text here.</p></body></html>"
-
-	t.Run("full", func(t *testing.T) {
-		got := selectContent(html, "give me full content", "text/html")
-		if !strings.Contains(got, "Test Page") {
-			t.Errorf("full mode should include title: %q", got)
-		}
-		if !strings.Contains(got, "Some text here") {
-			t.Errorf("full mode should include body: %q", got)
-		}
-	})
-
-	t.Run("default", func(t *testing.T) {
-		got := selectContent(html, "", "text/html")
-		if !strings.Contains(got, "Test Page") && !strings.Contains(got, "Some text") {
-			t.Errorf("unexpected content: %q", got)
-		}
-		if len([]rune(got)) > defaultPreviewChars+5 {
-			t.Errorf("too long: %d chars", len([]rune(got)))
-		}
-	})
-
-	t.Run("title_prompt", func(t *testing.T) {
-		got := selectContent(html, "get title", "text/html")
-		if len([]rune(got)) > titlePreviewChars+5 {
-			t.Errorf("title mode too long: %d chars", len([]rune(got)))
-		}
-	})
-
-	t.Run("summary_prompt", func(t *testing.T) {
-		got := selectContent(html, "summarize this", "text/html")
-		if len([]rune(got)) > summaryPreviewChars+5 {
-			t.Errorf("summary mode too long: %d chars", len([]rune(got)))
-		}
-	})
 }
 
 func TestExtractTitle(t *testing.T) {

@@ -33,7 +33,7 @@ go build -o websearch-cli ./cmd/cli/
 websearch-cli search <query> [--engine duckduckgo|tavily]
 
 # Fetch
-websearch-cli fetch <url> [--method direct|cdp] [--mode full|summary|title]
+websearch-cli fetch <url> [--method direct|cdp] [--mode full|summary|title] [--no-cache]
 ```
 
 Outputs LLM-friendly text to stdout. Exit code 0 on success, non-zero on failure.
@@ -47,6 +47,9 @@ Outputs LLM-friendly text to stdout. Exit code 0 on success, non-zero on failure
 | `TAVILY_API_KEY` | — | API key for Tavily search |
 | `FETCH_METHOD` | `direct` | Default fetch method (`direct` or `cdp`) |
 | `CHROME_DEBUG_ADDR` | `localhost:9222` | Chrome DevTools WebSocket address (used by `cdp` method) |
+| `CACHE_MAX_ENTRIES` | `128` | Max fetch cache entries |
+| `CACHE_TTL` | `5m` | Cache time-to-live (e.g. `30s`, `5m`, `1h`) |
+| `CACHE_MAX_ENTRY_SIZE` | `524288` | Max bytes per cached entry (512KB default) |
 
 Priority: explicit request parameter > CLI flag > environment variable > default value.
 
@@ -72,6 +75,7 @@ The `cdp` method renders JavaScript via Chrome DevTools Protocol. It requires Ch
 | `url` | string | yes | URL of the page to fetch |
 | `mode` | string | no | Content length — `"full"` (complete), `"summary"` (longer preview), `"title"` (short preview). Default: 900-char preview |
 | `method` | string | no | `direct` or `cdp` (default: `FETCH_METHOD` env or `direct`). `cdp` renders JavaScript but requires Chrome running with `--remote-debugging-port`. |
+| `no_cache` | boolean | no | If `true`, bypass cache and force a fresh request (default: `false`) |
 
 ## MCP Protocol Examples
 
@@ -161,7 +165,8 @@ Request:
     "arguments": {
       "url": "https://example.com",
       "mode": "summary",
-      "method": "direct"
+      "method": "direct",
+      "no_cache": false
     }
   }
 }
