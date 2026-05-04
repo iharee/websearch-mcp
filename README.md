@@ -5,10 +5,6 @@
 
 Agent-oriented web information acquisition system that integrates multi-engine search and content fetching into a unified interface. Exposed via MCP server and LLM-friendly CLI, it enables structured, multi-source retrieval of web data for downstream LLM workflows.
 
----
-
-TODO: Tavily search
-
 ## Features
 
 - **Multi-engine web search** — DuckDuckGo and Tavily, selectable per query
@@ -49,6 +45,9 @@ Outputs LLM-friendly text to stdout. Exit code 0 on success, non-zero on failure
 | `PORT` | `8848` | Server listen port |
 | `SEARCH_ENGINE` | `duckduckgo` | Default search engine (`duckduckgo` or `tavily`) |
 | `TAVILY_API_KEY` | — | API key for Tavily search |
+| `TAVILY_SEARCH_DEPTH` | `basic` | Tavily search depth: `basic`, `advanced`, `fast`, or `ultra-fast` |
+| `TAVILY_MAX_RESULTS` | `7` | Max results per Tavily search (1-20) |
+| `TAVILY_TOPIC` | `general` | Tavily search topic: `general`, `news`, or `finance` |
 | `FETCH_METHOD` | `direct` | Default fetch method (`direct` or `cdp`) |
 | `CHROME_DEBUG_ADDR` | `localhost:9222` | Chrome DevTools WebSocket address (used by `cdp` `connect` mode) |
 | `CDP_MODE` | `connect` | Browser source for `cdp` method: `connect`, `system`, or `bundled` |

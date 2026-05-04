@@ -27,8 +27,8 @@ func TestSearchNormal(t *testing.T) {
 
 		json.NewEncoder(w).Encode(tavilySearchResponse{
 			Results: []tavilyResult{
-				{Title: "Saki - Wikipedia", URL: "https://example.com/saki", Content: "Saki..."},
-				{Title: "Why is Saki so moe?", URL: "https://example.com/saki-moe", Content: "Saki is cute..."},
+				{Title: "Example 1", URL: "https://example.com/1", Content: "Example content 1..."},
+				{Title: "Example 2", URL: "https://example.com/2", Content: "Example content 2..."},
 			},
 		})
 	}))
@@ -52,23 +52,23 @@ func TestSearchNormal(t *testing.T) {
 		t.Fatalf("want 2 results, got %d", len(results))
 	}
 
-	if results[0].URL != "https://en.wikipedia.org/wiki/Saki" {
-		t.Errorf("result[0].URL = %q, want wikipedia URL", results[0].URL)
+	if results[0].URL != "https://example.com/1" {
+		t.Errorf("result[0].URL = %q, want https://example.com/1", results[0].URL)
 	}
-	if results[0].Title != "Saki - Wikipedia" {
+	if results[0].Title != "Example 1" {
 		t.Errorf("result[0].Title = %q", results[0].Title)
 	}
-	if results[0].Snippet != "Saki is a..." {
+	if results[0].Snippet != "Example content 1..." {
 		t.Errorf("result[0].Snippet = %q", results[0].Snippet)
 	}
 
-	if results[1].URL != "https://example.com/saki-moe" {
+	if results[1].URL != "https://example.com/2" {
 		t.Errorf("result[1].URL = %q", results[1].URL)
 	}
-	if results[1].Title != "Why is Saki so popular?" {
+	if results[1].Title != "Example 2" {
 		t.Errorf("result[1].Title = %q", results[1].Title)
 	}
-	if results[1].Snippet != "Saki is popular because..." {
+	if results[1].Snippet != "Example content 2..." {
 		t.Errorf("result[1].Snippet = %q", results[1].Snippet)
 	}
 }
@@ -143,6 +143,81 @@ func TestSearchRateLimit(t *testing.T) {
 		t.Fatal("expected error for 429, got nil")
 	}
 	if err.Error() != "tavily rate limit exceeded, retry later" {
+		t.Errorf("unexpected error: %s", err)
+	}
+}
+
+func TestSearchBadRequest(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error":"invalid search_depth parameter"}`))
+	}))
+	defer srv.Close()
+
+	p := &Provider{
+		client:      srv.Client(),
+		apiKey:      "test-key",
+		searchDepth: "basic",
+		maxResults:  7,
+		topic:       "general",
+		baseURL:     srv.URL,
+	}
+
+	_, err := p.Search(context.Background(), "test")
+	if err == nil {
+		t.Fatal("expected error for 400, got nil")
+	}
+	if err.Error() != `tavily bad request: {"error":"invalid search_depth parameter"}` {
+		t.Errorf("unexpected error: %s", err)
+	}
+}
+
+func TestSearchServerError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"internal server error"}`))
+	}))
+	defer srv.Close()
+
+	p := &Provider{
+		client:      srv.Client(),
+		apiKey:      "test-key",
+		searchDepth: "basic",
+		maxResults:  7,
+		topic:       "general",
+		baseURL:     srv.URL,
+	}
+
+	_, err := p.Search(context.Background(), "test")
+	if err == nil {
+		t.Fatal("expected error for 500, got nil")
+	}
+	if err.Error() != `tavily server error: {"error":"internal server error"}` {
+		t.Errorf("unexpected error: %s", err)
+	}
+}
+
+func TestSearchUnexpectedStatus(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte(`{"error":"forbidden"}`))
+	}))
+	defer srv.Close()
+
+	p := &Provider{
+		client:      srv.Client(),
+		apiKey:      "test-key",
+		searchDepth: "basic",
+		maxResults:  7,
+		topic:       "general",
+		baseURL:     srv.URL,
+	}
+
+	_, err := p.Search(context.Background(), "test")
+	if err == nil {
+		t.Fatal("expected error for 403, got nil")
+	}
+	if err.Error() != `tavily unexpected status 403: {"error":"forbidden"}` {
 		t.Errorf("unexpected error: %s", err)
 	}
 }
